@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-db # the name of our job
+  labels:
+    job-group: job-db # logical grouping
+    app: postgres-job
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        job-group: job-db # logical grouping
+        app: postgres-job
+    spec:
+      containers:
+        - name: job-db-container
+          image: postgres:10
+          imagePullPolicy: "IfNotPresent"
+          lifecycle:
+            postStart:
+              exec:
+                command: [ "/bin/sh","-c","sleep 20 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'CREATE TABLE IF NOT EXISTS hashfiles
+            (
+               id           BIGSERIAL PRIMARY KEY,
+               fileName     VARCHAR NOT NULL,
+               fullFilePath TEXT    NOT NULL,
+               algorithm    VARCHAR NOT NULL,
+               hashSum      VARCHAR NOT NULL,
+               deleted      BOOLEAN DEFAULT false
+            );'" ]
+          envFrom: # Get the environmental variables from a secret file whose name is "postgres-secret"
+            - secretRef:
+                name: postgres-secret
+          ports:
+          - containerPort: 5432                   # The port that the container exposes
+            name: postgres
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-persistent-storage     # This name should match the name specified in `volumes.name`
+      volumes: # A PersistentVolume is mounted as a volume to the Pod
+            - name: postgres-persistent-storage
+              persistentVolumeClaim:
+                claimName: postgres-pv-claim
+
+      restartPolicy: Never
+

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config
+  namespace: default
+  labels:
+    app: postgres-job
+data:
+  SPECIAL_LEVEL: "/home/ikaborda@scnsoft.com/GolandProjects/h"
+  SPECIAL_TYPE: charm
+  Special_path: /home/ikaborda@scnsoft.com/GolandProjects/h
+
+  Postgres_DB: postgresdb
+

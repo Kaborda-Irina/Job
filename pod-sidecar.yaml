@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar-pod
+spec:
+  containers:
+    - name: sidecar-container
+      image: appcron:latest
+      imagePullPolicy: Never
+      envFrom:
+        - secretRef:
+            name: postgres-secret
+      command: [ "sh","-c","./appCron $FLAG $TEXT" ]
+
+      env:
+        - name: TEXT
+          value: "../../my_files"
+        - name: FLAG
+          value: "-c"
+      volumeMounts:
+        - name: job-volume
+          mountPath: /my_files
+
+    - name: hasher-container
+      image: upgrade:latest
+      imagePullPolicy: Never
+      ports:
+      - name: http
+        containerPort: 9090                   # Should match the port number that the Go application listens on
+      envFrom:
+        - secretRef:
+            name: postgres-secret
+      command: [ "sh","-c","./sha256sum $FLAG_D $TEXT" ]
+      env:
+        - name: TEXT
+          value: "../../my_files"
+        - name: FLAG_D
+          value: "-d"
+      volumeMounts:
+        - name: job-volume
+          mountPath: /my_files
+
+  volumes:
+    - name: job-volume
+      persistentVolumeClaim:
+        claimName: my-persistent-volumeclaim
+  restartPolicy: Never

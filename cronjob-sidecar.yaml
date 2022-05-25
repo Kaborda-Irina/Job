@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 100
+      template:
+        spec:
+          containers:
+            - name: app-check
+              image: appcron:latest
+              imagePullPolicy: Never
+              envFrom:
+                - secretRef:
+                    name: postgres-secret
+              command: [ "sh","-c","./appCron $FLAG $TEXT" ]
+
+              env:
+                - name: TEXT
+                  value: "../../my_files"
+                - name: FLAG
+                  value: "-c"
+
+            - name: hasher-container
+              image: upgrade:latest
+              imagePullPolicy: Never          # If we have not pulled it before, get it from dockerhub
+              ports:
+                - name: http
+                  containerPort: 9090                   # Should match the port number that the Go application listens on
+              envFrom:
+                - secretRef:
+                    name: postgres-secret
+              command: [ "sh","-c","./sha256sum $FLAG_D $TEXT" ]
+              env:
+                - name: TEXT
+                  value: "../../my_files"
+                - name: FLAG_D
+                  value: "-d"
+
+              volumeMounts:
+                - name: job-volume
+                  mountPath: /my_files
+          volumes:
+            - name: job-volume
+              persistentVolumeClaim:
+                claimName: my-persistent-volumeclaim
+
+          restartPolicy: Never

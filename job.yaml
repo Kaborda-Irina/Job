@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-work # the name of our job
+  labels:
+    job-group: movie-load # logical grouping
+    app: job-work
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: job-work
+        job-group: movie-load # logical grouping
+    spec:
+      containers:
+        - name: job-container
+          image: upgrade:latest
+          imagePullPolicy: Never          # If we have not pulled it before, get it from dockerhub
+          ports:
+            - name: http
+              containerPort: 9090                   # Should match the port number that the Go application listens on
+          envFrom:
+              - secretRef:
+                  name: postgres-secret
+          command: ["sh","-c","./sha256sum $FLAG $TEXT"]
+          #["/bin/sh","-c","cat /src/keys"]
+         # ["/bin/sh","-c","ls /src/"]
+
+          #["sh","-c","./sha256sum $FLAG $TEXT"] - рабочий
+          #env:
+            #- name: MESSAGE
+            #  value: "hello world"
+            #command: ["/bin/echo"]
+            #args: ["$(MESSAGE)"]
+
+          #["/bin/sh", "/app", "./sha256sum -h"]
+
+          env:
+          - name: TEXT
+            value: "../../my_files"
+          - name: FLAG
+            value: "-d"
+          #- name: SPECIAL_PATH
+          #  valueFrom:
+           #   configMapKeyRef:
+            #    name: special-config
+             #   key:  Special_path
+          volumeMounts:
+            - name: job-volume
+              mountPath: /my_files
+      volumes:
+      - name: job-volume
+     #   configMap:
+    #      name: special-config
+    #      items:
+    #        - key: SPECIAL_LEVEL
+    #          path: keys
+        persistentVolumeClaim:
+            claimName: my-persistent-volumeclaim
+
+      restartPolicy: Never
