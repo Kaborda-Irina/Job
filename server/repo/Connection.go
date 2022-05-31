@@ -16,5 +16,19 @@ func ConnToDb(Dbdriver, DbUser, DbPassword, DbPort, DbHost, DbName string) (*sql
 	} else {
 		fmt.Printf("We are connected to the %s database", Dbdriver)
 	}
+
+	//ticker := time.NewTicker(5 * time.Second)
+	//go func() {
+	//	if true {
+	//		for range ticker.C {
+	//			_, err := db.Exec("SELECT * FROM hashfiles;")
+	//			if err != nil {
+	//				log.Fatalln(err)
+	//				os.Exit(1)
+	//			}
+	//		}
+	//	}
+	//}()
+
 	return db, nil
 }

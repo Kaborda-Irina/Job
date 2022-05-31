@@ -6,15 +6,16 @@ import (
 	"os"
 )
 
-func PutDatabase(filepath, hashFile string) string {
+func PutDatabase(filepath, hashFile string) {
 	db, err := repo.ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
-
-	_, err1 := db.Exec("INSERT INTO hashfiles (fileName, fullFilePath, hashSum, algorithm) VALUES ($1,$2,$3,'sha256');", filepath, filepath, hashFile)
-	if err1 != nil {
-		log.Fatalf("%v", err)
+	if err != nil {
+		log.Fatalf("can not conect with database %v", err)
 	}
-	res := "Succesful creation of table"
-	return res
+	_, err = db.Exec("INSERT INTO hashfiles (fileName, fullFilePath, hashSum, algorithm) VALUES ($1,$2,$3,'sha256')", filepath, filepath, hashFile)
+	if err != nil {
+		log.Fatalf("can not insert data in table %v", err)
+	}
+
 }
 func GetfromDB() []string {
 	db, err := repo.ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))

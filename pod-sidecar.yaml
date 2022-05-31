@@ -5,12 +5,12 @@ metadata:
 spec:
   containers:
     - name: sidecar-container
-      image: appcron:latest
+      image: app_sidecar:latest
       imagePullPolicy: Never
       envFrom:
         - secretRef:
             name: postgres-secret
-      command: [ "sh","-c","./appCron $FLAG $TEXT" ]
+      command: [ "sh","-c","while true; do ./appCron $FLAG $TEXT;sleep 30;done" ]
 
       env:
         - name: TEXT
@@ -20,6 +20,7 @@ spec:
       volumeMounts:
         - name: job-volume
           mountPath: /my_files
+
 
     - name: hasher-container
       image: upgrade:latest
@@ -44,4 +45,5 @@ spec:
     - name: job-volume
       persistentVolumeClaim:
         claimName: my-persistent-volumeclaim
-  restartPolicy: Never
+
+  restartPolicy: Always

@@ -50,15 +50,26 @@ func main() {
 }
 
 func MatchData(allDataFromDB []repo.DataFromDB, allDataCurrent []DataCurrent) {
-
+	db, err := repo.ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if allDataFromDB == nil {
+		os.Exit(2)
+	}
 	for _, dataFromDB := range allDataFromDB {
 		for _, dataCurrent := range allDataCurrent {
 			if dataFromDB.FullFilePath == dataCurrent.FileName {
 				if dataFromDB.Hash != dataCurrent.Hash {
-					//выход из проги или выход по ошибке
-					fmt.Printf("from db - %s %s, current - %s, %s", dataFromDB.FullFilePath, dataFromDB.Hash, dataCurrent.FileName, dataCurrent.Hash)
-					PutTable(dataCurrent.FileName, dataCurrent.Hash)
+
+					fmt.Printf("Modification data \n from db - %s %s, current - %s, %s", dataFromDB.FullFilePath, dataFromDB.Hash, dataCurrent.FileName, dataCurrent.Hash)
+					//PutTable(dataCurrent.FileName, dataCurrent.Hash)
+					_, err = db.Query("DROP TABLE hashfiles;")
+					if err != nil {
+						log.Fatalln(err)
+					}
 					os.Exit(1)
+
 				}
 
 			}
@@ -67,11 +78,14 @@ func MatchData(allDataFromDB []repo.DataFromDB, allDataCurrent []DataCurrent) {
 
 }
 
-func PutTable(filename, filePath string) {
+func PutTable(fileName, fileHash string) {
 	db, err := repo.ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
-
-	_, err1 := db.Exec("INSERT INTO hashfiles (filename, fullFilePath, hashSum, algorithm) VALUES (filename,filename,filePath,'sha256');")
-	if err1 != nil {
+	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	_, err = db.Exec("INSERT INTO hashfiles (fileName, fullFilePath, hashSum, algorithm)  VALUES ($1,$2,$3,'sha256');", fileName, fileName, fileHash)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	fmt.Println("successful insert")
 }

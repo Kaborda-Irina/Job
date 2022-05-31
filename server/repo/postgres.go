@@ -14,9 +14,12 @@ type DataFromDB struct {
 
 func GetData() []DataFromDB {
 	db, err := ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	var res []DataFromDB
 	sql, err := db.Query("SELECT fileName, fullFilePath, hashSum, algorithm FROM hashfiles;")
-
 	if err != nil {
 		log.Fatalln(err)
 	}

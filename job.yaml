@@ -24,17 +24,6 @@ spec:
               - secretRef:
                   name: postgres-secret
           command: ["sh","-c","./sha256sum $FLAG $TEXT"]
-          #["/bin/sh","-c","cat /src/keys"]
-         # ["/bin/sh","-c","ls /src/"]
-
-          #["sh","-c","./sha256sum $FLAG $TEXT"] - рабочий
-          #env:
-            #- name: MESSAGE
-            #  value: "hello world"
-            #command: ["/bin/echo"]
-            #args: ["$(MESSAGE)"]
-
-          #["/bin/sh", "/app", "./sha256sum -h"]
 
           env:
           - name: TEXT

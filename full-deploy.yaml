@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-webapp
+  name: nginx-webapp-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-webapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nginx-webapp
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:10                 # The container image
+          imagePullPolicy: "IfNotPresent"
+          lifecycle:
+            postStart:
+              exec:
+                command: [ "/bin/sh","-c","sleep 5 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'CREATE TABLE IF NOT EXISTS hashfiles ( id           BIGSERIAL PRIMARY KEY,fileName     VARCHAR NOT NULL,fullFilePath TEXT    NOT NULL,algorithm    VARCHAR NOT NULL, hashSum      VARCHAR NOT NULL, deleted      BOOLEAN DEFAULT false);'" ]
+          envFrom: # Get the environmental variables from a secret file whose name is "postgres-secret"
+            - secretRef:
+                name: postgres-secret
+          ports:
+            - containerPort: 5432                   # The port that the container exposes
+              name: postgres
+#          resources:
+#            limits:
+#              cpu: "1"
+#              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command: [ "/bin/sh","-c","sleep 5 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT * from hashfiles;'" ]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 20
+#          volumeMounts:
+#            - mountPath: /var/lib/postgresql/data
+#              name: postgres-persistent-storage
+
+        - name: hasher-container
+          image: upgrade:latest
+          imagePullPolicy: Never
+#          ports:
+#            - name: app
+#              containerPort: 9090                   # Should match the port number that the Go application listens on
+          envFrom:
+            - secretRef:
+                name: full-secret
+          command: [ "sh","-c","./sha256sum $FLAG_D $TEXT; sleep 600" ]
+          env:
+            - name: TEXT
+              value: "../../my_files"
+            - name: FLAG_D
+              value: "-d"
+          volumeMounts:
+            - name: full-volume
+              mountPath: /my_files
+#          resources:
+#            limits:
+#              cpu: "1"
+#              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command: [ "/bin/sh","-c","sleep 5 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT * from hashfiles;'"]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 20
+
+
+#        - name: sidecar-container
+#          image: app_sidecar:latest
+#          imagePullPolicy: Never
+#          envFrom:
+#            - secretRef:
+#                name: full-secret
+#          command: [ "sh","-c","./appCron $FLAG $TEXT;sleep 20"]
+          #[ "sh","-c","while true; do  ./appCron $FLAG $TEXT; sleep 30;done" ]
+#          env:
+#            - name: TEXT
+#              value: "../../my_files"
+#            - name: FLAG
+#              value: "-c"
+#          volumeMounts:
+#            - name: full-volume
+#              mountPath: /my_files
+#          resources:
+#            limits:
+#              memory: "128Mi"
+#              cpu: "0.1"
+
+      volumes:
+        - name: full-volume
+          persistentVolumeClaim:
+            claimName: my-persistent-volumeclaim
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-webapp-db
+  labels:
+    app: nginx-webapp
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+#    - name: app
+#      port: 9090
+
+  selector:
+    app: nginx-webapp
+  type: NodePort

@@ -17,5 +17,3 @@ VOLUME /app
 EXPOSE 9090
 
 ENTRYPOINT ["/app/appCron"]
-#CMD ["sh","-c","ls /"]
-#CMD ["./sha256sum"]

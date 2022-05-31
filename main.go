@@ -3,7 +3,6 @@ package main
 import (
 	"Job/db"
 	"Job/hasher"
-	"Job/server"
 	"flag"
 	"fmt"
 	"os"
@@ -37,6 +36,7 @@ func main() {
 			fmt.Println(file, hashFile)
 			db.PutDatabase(file, hashFile)
 		}
+		//os.Exit(0)
 	case checkHashSumFile:
 		result := db.GetfromDB()
 		for _, file := range result {
@@ -44,7 +44,7 @@ func main() {
 		}
 	}
 
-	server.Run()
+	//server.Run()
 }
 func PrintText(printText string) {
 	fmt.Println(printText)
