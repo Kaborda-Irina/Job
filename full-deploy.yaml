@@ -33,10 +33,10 @@ spec:
           ports:
             - containerPort: 5432                   # The port that the container exposes
               name: postgres
-#          resources:
-#            limits:
-#              cpu: "1"
-#              memory: "512Mi"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
           livenessProbe:
             exec:
               command: [ "/bin/sh","-c","sleep 5 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT * from hashfiles;'" ]
@@ -67,40 +67,40 @@ spec:
           volumeMounts:
             - name: full-volume
               mountPath: /my_files
-#          resources:
-#            limits:
-#              cpu: "1"
-#              memory: "512Mi"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
           livenessProbe:
             exec:
-              command: [ "/bin/sh","-c","sleep 5 && PGPASSWORD=$POSTGRES_PASSWORD psql -w -d $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT * from hashfiles;'"]
-            initialDelaySeconds: 5
+              command: [ "sh","-c","./sha256sum -l" ]
+            initialDelaySeconds: 2
             periodSeconds: 30
-            failureThreshold: 3
+            failureThreshold: 1
             successThreshold: 1
-            timeoutSeconds: 20
+            timeoutSeconds: 10
 
 
-#        - name: sidecar-container
-#          image: app_sidecar:latest
-#          imagePullPolicy: Never
-#          envFrom:
-#            - secretRef:
-#                name: full-secret
-#          command: [ "sh","-c","./appCron $FLAG $TEXT;sleep 20"]
+        - name: sidecar-container
+          image: app_sidecar:latest
+          imagePullPolicy: Never
+          envFrom:
+            - secretRef:
+                name: full-secret
+          command: [ "sh","-c","./appCron $FLAG $TEXT;sleep 60"]
           #[ "sh","-c","while true; do  ./appCron $FLAG $TEXT; sleep 30;done" ]
-#          env:
-#            - name: TEXT
-#              value: "../../my_files"
-#            - name: FLAG
-#              value: "-c"
-#          volumeMounts:
-#            - name: full-volume
-#              mountPath: /my_files
-#          resources:
-#            limits:
-#              memory: "128Mi"
-#              cpu: "0.1"
+          env:
+            - name: TEXT
+              value: "../../my_files"
+            - name: FLAG
+              value: "-c"
+          volumeMounts:
+            - name: full-volume
+              mountPath: /my_files
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "0.1"
 
       volumes:
         - name: full-volume

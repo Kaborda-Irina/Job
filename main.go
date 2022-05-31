@@ -3,6 +3,7 @@ package main
 import (
 	"Job/db"
 	"Job/hasher"
+	"Job/server/repo"
 	"flag"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ var dirPath string
 var doHelp bool
 var printText string
 var checkHashSumFile bool
+var liveness bool
 
 //initializes the binding of the flag to a variable that must run before the main() function
 func init() {
@@ -19,6 +21,7 @@ func init() {
 	flag.BoolVar(&doHelp, "h", false, "help")
 	flag.StringVar(&printText, "p", "", "print text")
 	flag.BoolVar(&checkHashSumFile, "c", false, "check hash sum files in directory")
+	flag.BoolVar(&liveness, "l", false, "liveness prob")
 }
 
 func main() {
@@ -42,6 +45,8 @@ func main() {
 		for _, file := range result {
 			fmt.Println(file)
 		}
+	case liveness:
+		LivenessProbHasher()
 	}
 
 	//server.Run()
@@ -59,4 +64,12 @@ func customHelpFlag() {
 		})
 	}
 	flag.Usage()
+}
+
+func LivenessProbHasher() {
+	res := repo.GetData()
+	if len(res) < 1 {
+		os.Exit(1)
+	}
+
 }
